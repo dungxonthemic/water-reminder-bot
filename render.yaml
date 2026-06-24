@@ -1,0 +1,16 @@
+services:
+  - type: worker
+    name: water-reminder-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: RENDER_EXTERNAL_URL
+        fromService:
+          type: pserv
+          name: water-reminder-bot
+          property: host
+      - key: PYTHON_VERSION
+        value: 3.14.3

@@ -95,54 +95,67 @@ bot tele/
 └── README.md           # File này
 ```
 
-## ☁️ Deploy lên Railway (chạy 24/7)
+## ☁️ Deploy lên Render (chạy 24/7 — MIỄN PHÍ)
 
-Nếu muốn bot chạy 24/7 mà không cần bật máy tính, bạn có thể deploy lên **Railway** (miễn phí $5/tháng — dư cho bot nhỏ).
+Deploy bot lên **Render** để chạy 24/7 mà không cần bật máy tính. **Hoàn toàn miễn phí, không cần thẻ tín dụng.**
 
 ### Bước 1: Đẩy code lên GitHub
 
-1. Tạo repository mới trên [github.com](https://github.com/new) (đặt tên VD: `water-reminder-bot`)
-2. Mở terminal tại thư mục project và chạy:
+*(Bỏ qua nếu đã push code rồi)*
 
 ```bash
 cd "d:\bot tele"
-git init
 git add .
-git commit -m "Initial commit - Water Reminder Bot"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/water-reminder-bot.git
-git push -u origin main
+git commit -m "Add Render deployment"
+git push origin main
 ```
 
-### Bước 2: Tạo tài khoản Railway
+### Bước 2: Tạo tài khoản Render
 
-1. Truy cập [railway.com](https://railway.com)
-2. Đăng ký bằng tài khoản GitHub
-3. Xác nhận email
+1. Truy cập [render.com](https://render.com)
+2. Đăng ký bằng tài khoản **GitHub**
 
-### Bước 3: Tạo project trên Railway
+### Bước 3: Tạo Web Service
 
-1. Click **"New Project"**
-2. Chọn **"Deploy from GitHub repo"**
-3. Chọn repository `water-reminder-bot` vừa push
-4. Railway sẽ tự detect Python project
+1. Vào Dashboard → click **"New +"** → chọn **"Web Service"**
+2. Chọn **"Build and deploy from a Git repository"** → Next
+3. Kết nối repo **`water-reminder-bot`** từ GitHub
+4. Điền thông tin:
+   - **Name**: `water-reminder-bot`
+   - **Region**: Singapore (gần Việt Nam nhất)
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `python bot.py`
+5. Chọn plan **"Free"**
+6. Click **"Create Web Service"**
 
 ### Bước 4: Cấu hình Token
 
-1. Trong project trên Railway, vào tab **"Variables"**
-2. Click **"New Variable"**
+1. Trong service vừa tạo, vào tab **"Environment"**
+2. Click **"Add Environment Variable"**
 3. Thêm:
    - **Key**: `TELEGRAM_BOT_TOKEN`
    - **Value**: Token từ BotFather
-4. Railway sẽ tự động redeploy
+4. Click **"Save Changes"** → Render sẽ tự deploy lại
 
-### Bước 5: Kiểm tra
+### Bước 5: Giữ bot luôn hoạt động (Keep-Alive)
 
-1. Vào tab **"Deployments"** → kiểm tra trạng thái `SUCCESS`
-2. Vào tab **"Logs"** → tìm dòng `✅ Bot đã sẵn sàng!`
-3. Mở Telegram, gửi `/start` cho bot
+Render free tier sẽ tắt bot sau 15 phút không có hoạt động. Để giữ bot luôn chạy:
 
-> 💡 **Mẹo**: Mỗi khi push code mới lên GitHub, Railway sẽ tự động deploy lại!
+1. Truy cập [cron-job.org](https://cron-job.org) → đăng ký tài khoản miễn phí
+2. Click **"Create Cronjob"**
+3. Điền:
+   - **Title**: `Keep bot alive`
+   - **URL**: `https://water-reminder-bot.onrender.com` (thay bằng URL Render của bạn)
+   - **Schedule**: Every **14 minutes**
+4. Save → Bot sẽ luôn được đánh thức và chạy 24/7!
+
+### Bước 6: Kiểm tra
+
+1. Vào tab **"Logs"** trên Render → tìm dòng `✅ Bot chạy webhook mode`
+2. Mở Telegram, gửi `/start` cho bot
+
+> 💡 **Mẹo**: Mỗi khi push code mới lên GitHub, Render sẽ tự động deploy lại!
 
 ---
 

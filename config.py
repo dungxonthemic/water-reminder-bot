@@ -12,6 +12,11 @@ load_dotenv()
 # === Telegram Bot Token ===
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
+# === Webhook (dùng khi deploy lên Render) ===
+RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL", "")
+PORT = int(os.getenv("PORT", "8443"))
+WEBHOOK_MODE = bool(RENDER_EXTERNAL_URL)  # Tự bật webhook nếu có URL
+
 # === Cài đặt nhắc nhở mặc định ===
 DEFAULT_REMINDER_START_HOUR = 7      # Bắt đầu nhắc từ 7:00
 DEFAULT_REMINDER_END_HOUR = 22       # Kết thúc nhắc lúc 22:00

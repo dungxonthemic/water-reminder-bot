@@ -1,6 +1,9 @@
 """
 Bot Telegram Nhắc Nhở Uống Nước 💧
 Entry point - Khởi chạy bot.
+Hỗ trợ 2 mode:
+  - Polling (local): py bot.py
+  - Webhook (Render): tự detect qua RENDER_EXTERNAL_URL
 """
 
 import logging
@@ -12,7 +15,7 @@ from telegram.ext import (
     CallbackQueryHandler,
 )
 
-from config import BOT_TOKEN
+from config import BOT_TOKEN, WEBHOOK_MODE, RENDER_EXTERNAL_URL, PORT
 from handlers import (
     start_command,
     stop_command,
@@ -69,8 +72,21 @@ def main():
     restore_all_jobs(application)
 
     # === Chạy bot ===
-    logger.info("✅ Bot đã sẵn sàng! Đang lắng nghe...")
-    application.run_polling(drop_pending_updates=True)
+    if WEBHOOK_MODE:
+        # --- Webhook mode (Render deployment) ---
+        webhook_url = f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}"
+        logger.info(f"✅ Bot chạy webhook mode tại port {PORT}")
+        application.run_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            url_path=BOT_TOKEN,
+            webhook_url=webhook_url,
+            drop_pending_updates=True,
+        )
+    else:
+        # --- Polling mode (local development) ---
+        logger.info("✅ Bot đã sẵn sàng! Đang lắng nghe (polling mode)...")
+        application.run_polling(drop_pending_updates=True)
 
 
 if __name__ == "__main__":
