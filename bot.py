@@ -9,6 +9,7 @@ Hỗ trợ 2 mode:
 import logging
 import sys
 
+from telegram import BotCommand
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -39,6 +40,21 @@ logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
+async def post_init(application):
+    """Thiết lập các lệnh (Commands Menu) cho bot."""
+    commands = [
+        BotCommand("start", "Bắt đầu nhắc nhở uống nước 💧"),
+        BotCommand("drink", "Ghi nhận lượng nước đã uống 🥤"),
+        BotCommand("status", "Xem thống kê nước uống hôm nay 📊"),
+        BotCommand("goal", "Thay đổi mục tiêu lượng nước 🎯"),
+        BotCommand("settings", "Thay đổi cấu hình nhắc nhở ⚙️"),
+        BotCommand("help", "Xem hướng dẫn chi tiết ℹ️"),
+        BotCommand("stop", "Tạm dừng nhắc nhở uống nước 🛑"),
+    ]
+    await application.bot.set_my_commands(commands)
+    logger.info("✅ Đã thiết lập Menu Lệnh tự động.")
+
+
 def main():
     """Khởi chạy bot."""
     # Kiểm tra token
@@ -53,8 +69,8 @@ def main():
 
     logger.info("🚀 Đang khởi động Bot Nhắc Uống Nước...")
 
-    # Tạo application
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
+    # Tạo application với post_init để cài đặt menu lệnh
+    application = ApplicationBuilder().token(BOT_TOKEN).post_init(post_init).build()
 
     # === Đăng ký command handlers ===
     application.add_handler(CommandHandler("start", start_command))
