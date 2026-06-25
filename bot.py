@@ -8,8 +8,11 @@ Hỗ trợ 2 mode:
 
 import logging
 import sys
+import asyncio
+import json
 
-from telegram import BotCommand
+import tornado.web
+from telegram import BotCommand, Update
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -55,6 +58,67 @@ async def post_init(application):
     logger.info("✅ Đã thiết lập Menu Lệnh tự động.")
 
 
+class MainHandler(tornado.web.RequestHandler):
+    """Handler cho trang chủ (root path) để trả về 200 OK cho keep-alive."""
+    def get(self):
+        self.set_status(200)
+        self.write("OK")
+
+
+class TelegramWebhookHandler(tornado.web.RequestHandler):
+    """Handler nhận webhook updates từ Telegram."""
+    async def post(self):
+        try:
+            # Lấy dữ liệu update từ Telegram
+            data = json.loads(self.request.body)
+            # Chuyển đổi thành đối tượng Update và đẩy vào hàng đợi của bot
+            ptb_app = self.settings["ptb_app"]
+            update = Update.de_json(data, ptb_app.bot)
+            await ptb_app.update_queue.put(update)
+            self.set_status(200)
+            self.write("OK")
+        except Exception as e:
+            logger.error(f"Lỗi khi xử lý webhook: {e}")
+            self.set_status(500)
+            self.write("Internal Server Error")
+
+
+async def run_webhook_mode(application):
+    """Chạy bot ở chế độ Webhook với custom Tornado server để hỗ trợ GET /."""
+    # Khởi tạo application (sẽ chạy post_init để cài menu tự động)
+    await application.initialize()
+    await application.start()
+
+    # Thiết lập webhook URL với Telegram
+    webhook_url = f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}"
+    await application.bot.set_webhook(
+        url=webhook_url,
+        drop_pending_updates=True,
+    )
+    logger.info(f"🚀 Đã đăng ký webhook thành công với Telegram: {webhook_url}")
+
+    # Tạo ứng dụng Tornado hỗ trợ cả GET / (cho cron-job) và POST /token (cho Telegram)
+    tornado_app = tornado.web.Application([
+        (r"/", MainHandler),
+        (r"/" + BOT_TOKEN, TelegramWebhookHandler),
+    ], ptb_app=application)
+
+    tornado_app.listen(PORT, address="0.0.0.0")
+    logger.info(f"✅ Web server đang lắng nghe tại port {PORT}")
+
+    try:
+        # Vòng lặp vô hạn giữ server hoạt động
+        while True:
+            await asyncio.sleep(3600)
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("🛑 Đang dừng bot...")
+    finally:
+        # Giải phóng tài nguyên khi dừng
+        await application.stop()
+        await application.shutdown()
+        logger.info("👋 Bot đã dừng hoàn toàn.")
+
+
 def main():
     """Khởi chạy bot."""
     # Kiểm tra token
@@ -89,16 +153,8 @@ def main():
 
     # === Chạy bot ===
     if WEBHOOK_MODE:
-        # --- Webhook mode (Render deployment) ---
-        webhook_url = f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}"
-        logger.info(f"✅ Bot chạy webhook mode tại port {PORT}")
-        application.run_webhook(
-            listen="0.0.0.0",
-            port=PORT,
-            url_path=BOT_TOKEN,
-            webhook_url=webhook_url,
-            drop_pending_updates=True,
-        )
+        # --- Webhook mode (Render deployment với custom Tornado) ---
+        asyncio.run(run_webhook_mode(application))
     else:
         # --- Polling mode (local development) ---
         logger.info("✅ Bot đã sẵn sàng! Đang lắng nghe (polling mode)...")
